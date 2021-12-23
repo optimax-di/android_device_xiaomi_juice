@@ -27,14 +27,16 @@
    IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <fstream>
-#include <unistd.h>
+#include <cstdlib>
+#include <cstring>
+#include <sys/sysinfo.h>
 #include <vector>
 
 #include <android-base/properties.h>
 #define _REALLY_INCLUDE_SYS__SYSTEM_PROPERTIES_H_
 #include <sys/_system_properties.h>
 
+#include "init_common.h"
 #include "property_service.h"
 #include "vendor_init.h"
 
@@ -45,50 +47,58 @@ std::vector<std::string> ro_props_default_source_order = {
     "product.",
     "system.",
     "vendor.",
+    "system_ext.",
 };
 
-void property_override(char const prop[], char const value[], bool add = true) {
-    prop_info *pi;
+void set_ro_build_prop(const std::string &source, const std::string &prop,
+        const std::string &value, bool product = false) {
+    std::string prop_name;
 
-    pi = (prop_info *)__system_property_find(prop);
-    if (pi)
-        __system_property_update(pi, value, strlen(value));
-    else if (add)
-        __system_property_add(prop, strlen(prop), value, strlen(value));
+    if (product) {
+        prop_name = "ro.product." + source + prop;
+    } else {
+        prop_name = "ro." + source + "build." + prop;
+    }
+
+    property_override(prop_name.c_str(), value.c_str(), false);
+}
+
+void set_device_props(const std::string brand, const std::string device, const std::string model) {
+    for (const auto &source : ro_props_default_source_order) {
+        set_ro_build_prop(source, "brand", brand, true);
+        set_ro_build_prop(source, "device", device, true);
+        set_ro_build_prop(source, "model", model, true);
+    }
+}
+
+void load_device_properties() {
+    std::string hwname = GetProperty("ro.boot.product.hardware.sku", "");
+    std::string region = GetProperty("ro.boot.hwc", "");
+
+    if (hwname == "lime") {
+        if (region == "Global") {
+            set_device_props(
+                    "Redmi", "lime", "Redmi 9T");
+        } else if (region == "India") {
+            set_device_props(
+                    "Redmi", "lime", "Redmi 9 Power");
+        } else if (region == "CN") {
+            set_device_props(
+      		    "Redmi", "lime", "Redmi Note 9 4G");
+        }
+    } else if (hwname == "lemon") {
+        set_device_props(
+                "Redmi", "lemon", "Redmi 9T NFC");
+    } else if (hwname == "citrus") {
+        set_device_props(
+                "POCO", "citrus", "POCO M3");
+    } else if (hwname == "pomelo") {
+        set_device_props(
+                "Redmi", "pomelo", "Redmi 9T");
+    }
 }
 
 void vendor_load_properties() {
-    const auto set_ro_build_prop = [](const std::string &source,
-                                      const std::string &prop,
-                                      const std::string &value) {
-        auto prop_name = "ro." + source + "build." + prop;
-        property_override(prop_name.c_str(), value.c_str(), false);
-    };
-
-    const auto set_ro_product_prop = [](const std::string &source,
-                                        const std::string &prop,
-                                        const std::string &value) {
-        auto prop_name = "ro.product." + source + prop;
-        property_override(prop_name.c_str(), value.c_str(), false);
-    };
-
-    std::string hwname = GetProperty("ro.boot.product.hardware.sku", "");
-    
-    if (hwname == "lime") {
-                property_override("ro.product.brand", "Redmi");
-                property_override("ro.product.model", "Redmi 9T, Note 9 4G, 9 Power");
-                property_override("ro.product.device", "lime");     
-    } else if (hwname == "lemon") {
-        property_override("ro.product.brand", "Redmi");
-        property_override("ro.product.model", "Redmi 9T NFC");
-        property_override("ro.product.device", "lemon");
-    } else if (hwname == "citrus") {
-        property_override("ro.product.brand", "POCO");
-        property_override("ro.product.model", "POCO M3");
-        property_override("ro.product.device", "citrus");
-    } else if (hwname == "pomelo") {
-        property_override("ro.product.brand", "Redmi");
-        property_override("ro.product.model", "Redmi 9T");
-        property_override("ro.product.device", "pomelo");
-    }
+    load_common_properties();
+    load_device_properties();
 }
