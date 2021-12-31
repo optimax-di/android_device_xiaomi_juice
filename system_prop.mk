@@ -35,6 +35,9 @@ PRODUCT_PROPERTY_OVERRIDES += \
    ro.sys.fw.dex2oat_thread_count=8 \
    dalvik.vm.boot-dex2oat-threads=8 \
    dalvik.vm.boot-dex2oat-cpu-set=0,1,2,3,4,5,6,7
+   
+# Maintainer
+ro.octavi.maintainer=optimaxdi
 
 # Netflix custom property
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
