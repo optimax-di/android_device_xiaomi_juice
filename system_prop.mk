@@ -37,7 +37,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
    dalvik.vm.boot-dex2oat-cpu-set=0,1,2,3,4,5,6,7
    
 # Maintainer
-ro.octavi.maintainer=optimaxdi
+ro.octavi.maintainer=optimaXdi
 
 # Netflix custom property
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += \
